@@ -1,0 +1,53 @@
+<collection>
+  <record>
+    <leader>01216cdt a2200373 i 4500</leader>
+    <controlfield tag="008">060906s198u    xra    f      000 0|eng d</controlfield>
+    <datafield tag="042" ind1=" " ind2=" ">
+      <subfield code="a">anuc</subfield>
+    </datafield> 
+    <datafield tag="245" ind1="1" ind2="0">
+      <subfield code="a">Shakespeare biography 1</subfield>
+      <subfield code="k">file</subfield>
+    </datafield> 
+    <datafield tag="264" ind1=" " ind2="0">
+      <subfield code="a">England, U.K.</subfield>
+      <subfield code="b">Shakespeare Collection</subfield>
+      <subfield code="c">1991</subfield>
+    </datafield> 
+    <datafield tag="500" ind1=" " ind2=" ">
+      <subfield code="a">Coverage: 1564-1616</subfield>
+    </datafield>
+    <datafield tag="651" ind1=" " ind2="0">
+      <subfield code="a">England</subfield>
+      <subfield code="x">History</subfield>
+      <subfield code="y">1564-1616</subfield>
+      <subfield code="v">Narratives</subfield>
+    </datafield>
+    <datafield tag="651" ind1=" " ind2="0">
+      <subfield code="a">Stratford-upon-Avon</subfield>
+      <subfield code="x">History</subfield>
+      <subfield code="y">1564-1616</subfield>
+    </datafield>
+  </record>
+
+  <record>
+    <leader>01216cdt a2200373 i 4500</leader>
+    <controlfield tag="008">060906s198u    xra    f      000 0|eng d</controlfield>
+    <datafield tag="042" ind1=" " ind2=" ">
+      <subfield code="a">anuc</subfield>
+    </datafield> 
+    <datafield tag="245" ind1="1" ind2="0">
+      <subfield code="a">Shakespeare biography 2</subfield>
+      <subfield code="k">file</subfield>
+    </datafield> 
+    <datafield tag="264" ind1=" " ind2="0">
+      <subfield code="a">England, U.K.</subfield>
+      <subfield code="b">Shakespeare Collection</subfield>
+    </datafield> 
+    <datafield tag="651" ind1=" " ind2="0">
+      <subfield code="a">Stratford-upon-Avon</subfield>
+      <subfield code="x">History</subfield>
+      <subfield code="y">1564-1616</subfield>
+    </datafield>
+  </record>
+</collection>
