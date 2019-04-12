@@ -1,4 +1,4 @@
-<%page args="field, rec_num, delim_rf, delim_sf, elem, is_debug_tpl"/>
+<%page args="fnames, field, rec_num, delim_rf, delim_sf, elem, is_debug_tpl"/>
 ##
 ## Copyright (c) 2019, Flinders University, South Australia. All rights reserved.
 ## Contributors: Library, Corporate Services, Flinders University.

@@ -55,6 +55,7 @@
 import csv
 import os
 import platform
+import re
 
 from mako.template import Template
 from xml.sax.saxutils import escape
@@ -87,6 +88,11 @@ class Csv2XmlTemplate:
     FNAME_CSV_IN  = "test01.csv"
     FNAME_TPL_IN  = "test01_marcxml.tpl"
     FNAME_XML_OUT = "test01_out.xml"
+
+    DIR_PATH = os.path.dirname(os.path.realpath(__file__)) + "/"
+    FPATH_CSV_IN  = DIR_PATH + FNAME_CSV_IN
+    FPATH_TPL_IN  = DIR_PATH + FNAME_TPL_IN
+    FPATH_XML_OUT = DIR_PATH + FNAME_XML_OUT
 
     # Common character encodings are:
     # - "cp1252" for Windows-1252 (eg. for Microsoft Excel CSV in Australia)
@@ -152,6 +158,11 @@ class Csv2XmlTemplate:
         self.fname_csv_in = fname_csv_in
         self.fname_tpl_in = fname_tpl_in
         self.fname_xml_out = fname_xml_out
+        self.fnames = {
+            "fname_prog":	os.path.basename(__file__),
+            "fname_csv":	os.path.basename(fname_csv_in),
+            "fname_tpl":	os.path.basename(fname_tpl_in),
+	}
 
         # Prepend XML element list with XML namespace
         self.xml_elements = {k:self.XML_NS + v for (k,v) in self.XML_ELEMENTS_WO_NS.items()}
@@ -204,9 +215,11 @@ class Csv2XmlTemplate:
                         for i, v in enumerate(rec):
                             #print("      <field%d>%s</field%d>" % (i, v.encode('unicode-escape').decode(self.ENCODING_XML_OUT), i))
                             print("      field %2d: '%s'" % (i, v.encode('unicode-escape').decode(self.ENCODING_XML_OUT)))
+                            if re.search('^\d{4}$', v, re.ASCII):
+                                print("      *** DETECTED A MATCH: 4 DIGITS ***")
 
                     outfile.write(tpl.render_unicode(
-                        field = rec, rec_num = row_num,
+                        fnames = self.fnames, field = rec, rec_num = row_num,
                         delim_rf = self.DELIM_REPEATED_FIELD, delim_sf = self.DELIM_SUBFIELD,
                         elem = self.xml_elements, is_debug_tpl = self.IS_DEBUG_TPL
                         ))
@@ -276,9 +289,9 @@ class Csv2XmlTemplate:
 # main()
 ##############################################################################
 t = Csv2XmlTemplate(
-    Csv2XmlTemplate.FNAME_TPL_IN, 
-    Csv2XmlTemplate.FNAME_CSV_IN, 
-    Csv2XmlTemplate.FNAME_XML_OUT
+    Csv2XmlTemplate.FPATH_TPL_IN, 
+    Csv2XmlTemplate.FPATH_CSV_IN, 
+    Csv2XmlTemplate.FPATH_XML_OUT
 )
 t.show_heading()
 t.show_processed_records()
