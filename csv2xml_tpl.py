@@ -51,6 +51,13 @@
 #   * You can usually avoid these problems by directly writing to a
 #     file within the Python program.
 #
+# References:
+# - https://docs.makotemplates.org/en/latest/unicode.html
+# - https://docs.python.org/3/howto/unicode.html
+# - https://docs.python.org/3/library/codecs.html#standard-encodings
+# - http://www.cogsci.nl/blog/a-simple-explanation-of-character-encoding-in-python.html
+# - http://www.cp1252.com/
+#
 ##############################################################################
 import csv
 import os
@@ -63,12 +70,6 @@ from textwrap import dedent
 
 ##############################################################################
 class Csv2XmlTemplate:
-    # https://docs.makotemplates.org/en/latest/unicode.html
-    # https://docs.python.org/3/howto/unicode.html
-    # https://docs.python.org/3/library/codecs.html#standard-encodings
-    # http://www.cogsci.nl/blog/a-simple-explanation-of-character-encoding-in-python.html
-
-    # http://www.cp1252.com/
 
     ##########################################################################
     # Debug vars
@@ -148,7 +149,11 @@ class Csv2XmlTemplate:
     debug_summary_info = {
                 'empty':        {},
                 'has_delim_rf': {},
+                'has_empty_rf': {},
+
                 'has_delim_sf': {},
+                'has_empty_sf': {},
+                'has_bad_sf_code': {},
                 }
 
     ##########################################################################
@@ -205,7 +210,9 @@ class Csv2XmlTemplate:
                     if row_num < self.SKIP_CSV_ROWS_BEFORE or row_num > self.SKIP_CSV_ROWS_AFTER:
                         continue
 
-                    rec = list(map(lambda s: escape(s) if self.WILL_CONVERT_INPUT_TEXT_TO_XML else s, row))
+                    # XML-escape every field (if applicable). Strip leading/trailing whitespace from every field.
+                    # FIXME: Consider stripping repeated fields and subfields.
+                    rec = list(map(lambda s: escape(s.strip()) if self.WILL_CONVERT_INPUT_TEXT_TO_XML else s.strip(), row))
                     if "".join(rec) == "":
                         continue        # Skip empty lines
 
@@ -227,7 +234,15 @@ class Csv2XmlTemplate:
                 outfile.write(self.POSTAMBLE_XML)
 
     ##########################################################################
+    def show_debug_summary_info_report(self, dsi_key, rpt_title, hdr_fields, rpt_fmt):
+        print("\n%s:" % (rpt_title))
+        for i, s_row_nums in sorted(self.debug_summary_info[dsi_key].items()):
+            col_name = " <%s>" % hdr_fields[i] if self.USE_ROW0_HDR_DEBUG else ""
+            print(rpt_fmt % (i, col_name, ",".join(s_row_nums)))
+
+    ##########################################################################
     def show_debug_summary_info_for_records(self):
+        # Collect the report info
         hdr_fields = ()
         col_name_len = 28 if self.USE_ROW0_HDR_DEBUG else 0
         s_col_name_len = str(col_name_len)
@@ -237,28 +252,34 @@ class Csv2XmlTemplate:
                 rec = row
                 if row_num == 0:
                     hdr_fields = rec
-                if "".join(rec) == "":
+                elif "".join(rec) == "":
                     continue        # Skip empty lines
-                self.get_debug_summary_info_for_1_record(rec, row_num)
+                else:
+                    self.get_debug_summary_info_for_1_record(rec, row_num)
 
-        dsi = self.debug_summary_info
-        fmt = "  Field %2d%-" + s_col_name_len + "s is empty in rows: %s"
-        print("\nEmpty fields:")
-        for i, s_row_nums in dsi['empty'].items():
-            col_name = " <%s>" % hdr_fields[i] if self.USE_ROW0_HDR_DEBUG else ""
-            print(fmt % (i, col_name, ",".join(s_row_nums)))
+        # Show the report info
+        reports_config = [
+            # Key		Report title						Printf-format of report line
+            ["empty",		"Empty fields",						"  Field %2d%-" + s_col_name_len + "s is empty in rows: %s"],
+            ["has_delim_rf",	"Repeated-field (RF) delimiter",			"  Field %2d%-" + s_col_name_len + "s contains RF delimiter in rows: %s"],
+            ["has_delim_sf",	"Subfield (SF) delimiter",				"  Field %2d%-" + s_col_name_len + "s contains SF delimiter in rows: %s"],
 
-        fmt = "  Field %2d%-" + s_col_name_len + "s contains RF delimiter in rows: %s"
-        print("\nRepeated-field (RF) delimiter:")
-        for i, s_row_nums in dsi['has_delim_rf'].items():
-            col_name = " <%s>" % hdr_fields[i] if self.USE_ROW0_HDR_DEBUG else ""
-            print(fmt % (i, col_name, ",".join(s_row_nums)))
+            ["has_empty_rf",	"Empty repeated-field (RF)",				"  Field %2d%-" + s_col_name_len + "s contains an empty RF in rows: %s"],
+            ["has_empty_sf",	"Empty subfield (SF)",					"  Field %2d%-" + s_col_name_len + "s contains an empty SF in rows: %s"],
+            ["has_bad_sf_code",	"Invalid subfield code (SFC). Should be [a-z0-9]",	"  Field %2d%-" + s_col_name_len + "s contains an invalid SFC: %s"],
+	]
 
-        fmt = "  Field %2d%-" + s_col_name_len + "s contains SF delimiter in rows: %s"
-        print("\nSubfield (SF) delimiter:")
-        for i, s_row_nums in dsi['has_delim_sf'].items():
-            col_name = " <%s>" % hdr_fields[i] if self.USE_ROW0_HDR_DEBUG else ""
-            print(fmt % (i, col_name, ",".join(s_row_nums)))
+        for params in reports_config:
+            dsi_key, rpt_title, rpt_fmt = params
+            self.show_debug_summary_info_report(dsi_key, rpt_title, hdr_fields, rpt_fmt)
+        print()
+
+    ##########################################################################
+    def add_row_to_debug_summary_info(self, dsi_key, field_index, s_row_num):
+        if field_index in self.debug_summary_info[dsi_key]:
+            self.debug_summary_info[dsi_key][field_index].append(s_row_num)
+        else:
+            self.debug_summary_info[dsi_key][field_index] = [ s_row_num ]
 
     ##########################################################################
     def get_debug_summary_info_for_1_record(self, rec, row_num):
@@ -268,26 +289,43 @@ class Csv2XmlTemplate:
         for i, v in enumerate(rec):
             if v:
                 if v.find(self.DELIM_REPEATED_FIELD) != -1:
-                    if i in dsi['has_delim_rf']:
-                        dsi['has_delim_rf'][i].append(s_row_num)
-                    else:
-                        dsi['has_delim_rf'][i] = [ s_row_num ]
+                    self.add_row_to_debug_summary_info('has_delim_rf', i, s_row_num)
+
+                    # Find empty repeated-fields
+                    rfields = v.split(self.DELIM_REPEATED_FIELD)
+                    if None in rfields or "" in rfields:
+                        self.add_row_to_debug_summary_info('has_empty_rf', i, s_row_num)
 
                 if v.find(self.DELIM_SUBFIELD) != -1:
-                    if i in dsi['has_delim_sf']:
-                        dsi['has_delim_sf'][i].append(s_row_num)
-                    else:
-                        dsi['has_delim_sf'][i] = [ s_row_num ]
+                    self.add_row_to_debug_summary_info('has_delim_sf', i, s_row_num)
+
+                # Find problem sub-fields (possibly within repeated-fields)
+                if v.find(self.DELIM_REPEATED_FIELD) != -1 or v.find(self.DELIM_SUBFIELD) != -1:
+                    for rf_i, rf_val in enumerate(v.split(self.DELIM_REPEATED_FIELD)):
+                        for sf_i, sf_val in enumerate(rf_val.split(self.DELIM_SUBFIELD)):
+                            # First subfield does not have a MARC subfield code ("a" is assumed)
+                            if sf_i == 0:
+                                if not sf_val or len(sf_val) == 0:
+                                    self.add_row_to_debug_summary_info('has_empty_sf', i, s_row_num)
+
+                            # After the first subfield, the first char must be a MARC subfield code (eg. "z")
+                            else:
+                                if not sf_val or len(sf_val) < 2:
+                                    self.add_row_to_debug_summary_info('has_empty_sf', i, s_row_num)
+
+                                # Subfield has 2 chars or more. Is first char valid?
+                                else:
+                                    if not re.search('^[a-z0-9]', sf_val):
+                                        self.add_row_to_debug_summary_info('has_bad_sf_code', i, s_row_num)
 
             else:
-                if i in dsi['empty']:
-                    dsi['empty'][i].append(s_row_num)
-                else:
-                    dsi['empty'][i] = [ s_row_num ]
+                self.add_row_to_debug_summary_info('empty', i, s_row_num)
 
 ##############################################################################
 # main()
 ##############################################################################
+print("This script: '" + __file__ + "'")
+
 t = Csv2XmlTemplate(
     Csv2XmlTemplate.FPATH_TPL_IN, 
     Csv2XmlTemplate.FPATH_CSV_IN, 
