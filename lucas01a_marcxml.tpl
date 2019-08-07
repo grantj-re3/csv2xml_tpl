@@ -29,10 +29,13 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
         date1 = field[3]				# 4 chars: YYYY
     else:
         date1 = '    '
-    now = datetime.datetime.now().strftime("%y%m%d")	# 6 chars: YYMMDD
+    now = datetime.datetime.now()
+    now_yymmdd = now.strftime("%y%m%d")			# 6 chars: YYMMDD
+    marc005 = now.strftime("%Y%m%d%H%M%S.0")		# 16 chars: yyyymmdd + hhmmss.f
     # Pos:    "0-567-0123456789 123456789 123456789"
-    marc008 = "%6ss%4s####io######r###########eng#d" % (now, date1)
+    marc008 = "%6ss%4s####io######r###########eng#d" % (now_yymmdd, date1)
 %>\
+    <${elem['cf']} tag="005">${marc005}</${elem['cf']}>
     <${elem['cf']} tag="008">${marc008}</${elem['cf']}>\
 
     ##########################################################################
@@ -59,22 +62,42 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     </${elem['df']}>\
 
     ##########################################################################
-    ## Constant
+    ## 100: Optionally empty field; only the first of repeated fields in 100
+    ## FIXME: Review
+    ## FIXME: 100 is a non-repeating field. 2nd and subsequent authors should be in MARC 700.
     ## 100 FIXME: $e? Indicators?
+    ## FIXME: Add report to show EMPTY SUBFIELDS!
+    % if field[2]:
+      % for fld_i,fld_val in enumerate(field[2].split(delim_rf)):
+<%
+          val_trim = fld_val.strip()
+%>\
+        % if fld_i == 0:
     <${elem['df']} tag="100" ind1="1" ind2=" ">
-      <${elem['sf']} code="a">${field[2]}</${elem['sf']}>
+      <${elem['sf']} code="a">${val_trim}</${elem['sf']}>
       <${elem['sf']} code="e">author.</${elem['sf']}>
-    </${elem['df']}>\
+    </${elem['df']}>
+        % endif
+      % endfor
+    % endif \
 
     ##########################################################################
     ## 245 FIXME: $k, not $b?
-    <${elem['df']} tag="245" ind1="1" ind2="0">
+    ## FIXME: The presence of 100 should change 245 ind1 from "0" to "1".
+<%
+    # The presence of 100/1XX should change 245 ind1 from "0" to "1".
+    if field[2]:	# MARC 100
+      ind1 = "1"
+    else:
+      ind1 = "0"
+%>\
+    <${elem['df']} tag="245" ind1="${ind1}" ind2="0">
       <${elem['sf']} code="a">${field[1]}</${elem['sf']}>
       <${elem['sf']} code="k">file</${elem['sf']}>
     </${elem['df']}>\
 
     ##########################################################################
-    ## 264: $c may be empty
+    ## 264: $c may be empty or YYYY
     <${elem['df']} tag="264" ind1=" " ind2="0">
       <${elem['sf']} code="a">Adelaide, S.A.</${elem['sf']}>
       <${elem['sf']} code="b">Anton Lucas Collection</${elem['sf']}>
@@ -84,13 +107,24 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     </${elem['df']}>\
 
     ##########################################################################
+    ## 300: Optionally empty field; repeated fields
+    ## FIXME: Review
     ## 300 FIXME: Spreadsheet column says "Manuscript"; where does that info fit in 300?
     ## 300$a in markup example says: "leaf/leaves pages"
+    % if field[5]:
+      % for fld_val in field[5].split(delim_rf):
+<%
+          val_trim = fld_val.strip()
+%>\
+        % if val_trim != "":
     <${elem['df']} tag="300" ind1=" " ind2=" ">
-      <${elem['sf']} code="a">${field[5]}</${elem['sf']}>
+      <${elem['sf']} code="a">${val_trim}</${elem['sf']}>
       <${elem['sf']} code="c">30 cm.</${elem['sf']}>
       <${elem['sf']} code="e">In manila folder.</${elem['sf']}>
-    </${elem['df']}>\
+    </${elem['df']}>
+        % endif
+      % endfor
+    % endif \
 
     ##########################################################################
     ## Constant
@@ -158,27 +192,13 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     % endif \
 
     ##########################################################################
+    ## 610: Optionally empty field; [repeated fields - not in spreadsheet yet]; specified subfields
+    ## FIXME: Review
     ## 610 FIXME: $a? Indicators?
     % if field[8]:
+      % for fld_val in field[8].split(delim_rf):
     <${elem['df']} tag="610" ind1="1" ind2="0">
-      <${elem['sf']} code="a">${field[8]}</${elem['sf']}>
-    </${elem['df']}>
-    % endif \
-
-    ##########################################################################
-    ## 650 FIXME: Spreadsheet says "Three Regions Affair; Peristiwa Tiga Daerah". Template says "Files (Records)".
-    % if field[6]:
-    <${elem['df']} tag="650" ind1=" " ind2="0">
-      <${elem['sf']} code="a">${field[6]}</${elem['sf']}>
-    </${elem['df']}>
-    % endif \
-
-    ##########################################################################
-    ## 651: Optionally empty field; repeated fields; specified subfields
-    % if field[7]:
-    % for fld_val in field[7].split(delim_rf):
-    <${elem['df']} tag="651" ind1=" " ind2="0">
-      % for i,sub_val in enumerate(fld_val.split(delim_sf)):
+        % for i,sub_val in enumerate(fld_val.split(delim_sf)):
 <%
             if i == 0:
                 # FIXME: Is this assumption correct?
@@ -189,9 +209,94 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
                 code, val = sub_val[0:1], sub_val[1:]
 %>\
       <${elem['sf']} code="${code}">${val}</${elem['sf']}>
-      % endfor
+        % endfor
     </${elem['df']}>
-    % endfor
+      % endfor
+    % endif \
+
+    ##########################################################################
+    ## 650: Optionally empty field; repeated fields; specified subfields
+    ## FIXME: Review
+    ## 650 FIXME: Spreadsheet says "Three Regions Affair; Peristiwa Tiga Daerah". Template says "Files (Records)".
+    % if field[6]:
+      % for fld_val in field[6].split(delim_rf):
+    <${elem['df']} tag="650" ind1=" " ind2="0">
+        % for i,sub_val in enumerate(fld_val.split(delim_sf)):
+<%
+            if i == 0:
+                # FIXME: Is this assumption correct?
+                # Subfield-code not specified for first subfield; assume "a"
+                code, val = "a", sub_val
+            else:
+                # Subfield-code specified by first char 
+                code, val = sub_val[0:1], sub_val[1:]
+%>\
+      <${elem['sf']} code="${code}">${val}</${elem['sf']}>
+        % endfor
+    </${elem['df']}>
+      % endfor
+    % endif \
+
+    ##########################################################################
+    ## 651: Optionally empty field; repeated fields; specified subfields
+    % if field[7]:
+      % for fld_val in field[7].split(delim_rf):
+    <${elem['df']} tag="651" ind1=" " ind2="0">
+        % for i,sub_val in enumerate(fld_val.split(delim_sf)):
+<%
+            if i == 0:
+                # FIXME: Is this assumption correct?
+                # Subfield-code not specified for first subfield; assume "a"
+                code, val = "a", sub_val
+            else:
+                # Subfield-code specified by first char 
+                code, val = sub_val[0:1], sub_val[1:]
+%>\
+      <${elem['sf']} code="${code}">${val}</${elem['sf']}>
+        % endfor
+    </${elem['df']}>
+      % endfor
+    % endif \
+
+    ##########################################################################
+    ## 653: Optionally empty field; repeated fields; specified subfields
+    ## FIXME: Review
+    % if field[12]:
+      % for fld_val in field[12].split(delim_rf):
+    <${elem['df']} tag="653" ind1=" " ind2=" ">
+        % for i,sub_val in enumerate(fld_val.split(delim_sf)):
+<%
+            if i == 0:
+                # FIXME: Is this assumption correct?
+                # Subfield-code not specified for first subfield; assume "a"
+                code, val = "a", sub_val
+            else:
+                # Subfield-code specified by first char 
+                code, val = sub_val[0:1], sub_val[1:]
+%>\
+      <${elem['sf']} code="${code}">${val}</${elem['sf']}>
+        % endfor
+    </${elem['df']}>
+      % endfor
+    % endif \
+
+    ##########################################################################
+    ## 700: Optionally empty field; only the 2nd, 3rd,... of repeated fields in 700
+    ## FIXME: Review
+    ## FIXME: 100 is a non-repeating field. 2nd and subsequent authors should be in MARC 700.
+    ## 700 FIXME: $e? Indicators?
+    % if field[2]:
+      % for fld_i,fld_val in enumerate(field[2].split(delim_rf)):
+<%
+          val_trim = fld_val.strip()
+%>\
+        % if fld_i > 0:
+    <${elem['df']} tag="700" ind1="1" ind2=" ">
+      <${elem['sf']} code="a">${val_trim}</${elem['sf']}>
+      <${elem['sf']} code="e">author.</${elem['sf']}>
+    </${elem['df']}>
+        % endif
+      % endfor
     % endif \
 
     ##########################################################################
