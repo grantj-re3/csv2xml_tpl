@@ -41,8 +41,8 @@ create an Alma Import Profile which will:
     + Non Serial match method: [024/035 Match Method]
   * Match Actions
     + Handling method: [Automatic]
-    + Single match - match only record with the same inventory type (electronic/physical): - FIXME: [Check]?
     + Upon match: [Overlay]
+    + Single match - match only record with the same inventory type (electronic/physical): - FIXME: [Check]?
     + Merge method: [Overlay all fields but local]
     + Select Action - Allow bibliographic record deletion: -
     + Select Action - Do not override/merge a record with lower brief version: -
@@ -55,8 +55,7 @@ create an Alma Import Profile which will:
     + Select Action - Prefer record with the same inventory type (electronic/physical): -
     + Select Action - Skip and do not import unresolved records: [Check]
   * Handle Record Redirection
-    + Canceled record field: -
-    + Canceled record subfield: -
+    + Canceled record field/subfield: - -
     + Canceled record: [Delete]
     + Merge method: [Overlay all fields but local]
     + Update holdings call number: -
@@ -77,7 +76,7 @@ create an Alma Import Profile which will:
     + Library field/subfield: - -
     + Location field/subfield: - -
     + Default library: [Special Collections]
-    + Default location: [Central - Special - Anton Lucas Collection] ([DAL])
+    + Default location: [Central - Special - Anton Lucas Collection] / [DAL]
     + Map library/location: [Uncheck]
     + Number of items field/subfield: - -
     + Default number: -
@@ -86,13 +85,14 @@ create an Alma Import Profile which will:
     + Default item policy: -
     + Item Call Number: - -
   * Holding Records Mapping
-
-Input record tag | Holdings record tag | Input record subfields | Holdings record subfields
-----------|----------------------------|------------------------|--------------------------
-024       | 024                        | a                      | a
-
-  * Click Next
-- Part 6 - Mapping
-  * Location Mapping: -
+    + (See Holding Records Mapping table below)
+    + Update holdings call number: -
   * Click Save
+
+
+### Holding Records Mapping
+
+Input record tag | Input record subfields | Holdings record tag | Holdings record subfields
+-----------------|------------------------|---------------------|--------------------------
+024              | a                      | 024                 | a
 
