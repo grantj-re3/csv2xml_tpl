@@ -23,6 +23,7 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     <${elem['ldr']}>     cpm#a22     #i#4500</${elem['ldr']}>\
 
     ##########################################################################
+    ## FIXME: How to deal with YYYY-YYYY
 <%
     # If date field not NONE and is 4 digits, then substitute into 008 pos 7-10.
     if field[3] and re.search('^\d{4}$', field[3], re.ASCII):
@@ -30,6 +31,8 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     else:
         date1 = '    '
     now = datetime.datetime.now()
+    # FIXME: COMMENT OUT DEBUG LINE BELOW
+    #now = datetime.datetime(2019, 6, 12, 17, 41, 31)	# For debug
     now_yymmdd = now.strftime("%y%m%d")			# 6 chars: YYMMDD
     marc005 = now.strftime("%Y%m%d%H%M%S.0")		# 16 chars: yyyymmdd + hhmmss.f
     # Pos:    "0-567-0123456789 123456789 123456789"
@@ -62,28 +65,21 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     </${elem['df']}>\
 
     ##########################################################################
-    ## 100: Optionally empty field; only the first of repeated fields in 100
+    ## 100: Optionally empty field; only the first author should appear in
+    ## non-repeating 100 field. 2nd and subsequent authors should be in MARC 700.
     ## FIXME: Review
-    ## FIXME: 100 is a non-repeating field. 2nd and subsequent authors should be in MARC 700.
     ## 100 FIXME: $e? Indicators?
     ## FIXME: Add report to show EMPTY SUBFIELDS!
     % if field[2]:
-      % for fld_i,fld_val in enumerate(field[2].split(delim_rf)):
-<%
-          val_trim = fld_val.strip()
-%>\
-        % if fld_i == 0:
     <${elem['df']} tag="100" ind1="1" ind2=" ">
-      <${elem['sf']} code="a">${val_trim}</${elem['sf']}>
+      <${elem['sf']} code="a">${field[2]}</${elem['sf']}>
       <${elem['sf']} code="e">author.</${elem['sf']}>
     </${elem['df']}>
-        % endif
-      % endfor
     % endif \
 
     ##########################################################################
-    ## 245 FIXME: $k, not $b?
-    ## FIXME: The presence of 100 should change 245 ind1 from "0" to "1".
+    ## 245
+    ## FIXME: $k, not $b?
 <%
     # The presence of 100/1XX should change 245 ind1 from "0" to "1".
     if field[2]:	# MARC 100
@@ -281,21 +277,19 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     % endif \
 
     ##########################################################################
-    ## 700: Optionally empty field; only the 2nd, 3rd,... of repeated fields in 700
+    ## 700: Optionally empty field; 2nd and subsequent authors should be
+    ## in MARC 700. First author should be in non-repeating 100 field.
     ## FIXME: Review
-    ## FIXME: 100 is a non-repeating field. 2nd and subsequent authors should be in MARC 700.
     ## 700 FIXME: $e? Indicators?
-    % if field[2]:
-      % for fld_i,fld_val in enumerate(field[2].split(delim_rf)):
+    % if field[13]:
+      % for fld_i,fld_val in enumerate(field[13].split(delim_rf)):
 <%
           val_trim = fld_val.strip()
 %>\
-        % if fld_i > 0:
     <${elem['df']} tag="700" ind1="1" ind2=" ">
       <${elem['sf']} code="a">${val_trim}</${elem['sf']}>
       <${elem['sf']} code="e">author.</${elem['sf']}>
     </${elem['df']}>
-        % endif
       % endfor
     % endif \
 
