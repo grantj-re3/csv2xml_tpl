@@ -86,14 +86,16 @@ class Csv2XmlTemplate:
 
     ##########################################################################
     # Files and their character encoding
+    DIR_PROJECT = "test"
+
     FNAME_CSV_IN  = "test01.csv"
     FNAME_TPL_IN  = "test01_marcxml.tpl"
     FNAME_XML_OUT = "test01_out.xml"
 
-    DIR_PATH = os.path.dirname(os.path.realpath(__file__)) + "/"
-    FPATH_CSV_IN  = DIR_PATH + FNAME_CSV_IN
-    FPATH_TPL_IN  = DIR_PATH + FNAME_TPL_IN
-    FPATH_XML_OUT = DIR_PATH + FNAME_XML_OUT
+    PATH_PROJECT = "%s/%s/" % (os.path.dirname(os.path.dirname(__file__)), DIR_PROJECT)
+    FPATH_CSV_IN  = PATH_PROJECT + FNAME_CSV_IN
+    FPATH_TPL_IN  = PATH_PROJECT + FNAME_TPL_IN
+    FPATH_XML_OUT = PATH_PROJECT + FNAME_XML_OUT
 
     # Common character encodings are:
     # - "cp1252" for Windows-1252 (eg. for Microsoft Excel CSV in Australia)
