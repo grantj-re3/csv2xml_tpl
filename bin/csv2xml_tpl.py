@@ -150,6 +150,8 @@ class Csv2XmlTemplate:
     # Class vars
     debug_summary_info = {
                 'empty':        {},
+                'has_white_space': {},
+
                 'has_delim_rf': {},
                 'has_empty_rf': {},
 
@@ -263,6 +265,8 @@ class Csv2XmlTemplate:
         reports_config = [
             # Key		Report title						Printf-format of report line
             ["empty",		"Empty fields",						"  Field %2d%-" + s_col_name_len + "s is empty in rows: %s"],
+            ["has_white_space",	"Unexpected white space",				"  Field %2d%-" + s_col_name_len + "s contains unexpected space in rows: %s"],
+
             ["has_delim_rf",	"Repeated-field (RF) delimiter",			"  Field %2d%-" + s_col_name_len + "s contains RF delimiter in rows: %s"],
             ["has_delim_sf",	"Subfield (SF) delimiter",				"  Field %2d%-" + s_col_name_len + "s contains SF delimiter in rows: %s"],
 
@@ -286,8 +290,8 @@ class Csv2XmlTemplate:
     ##########################################################################
     def get_debug_summary_info_for_1_record(self, rec, row_num):
         # Must re-initialise self.debug_summary_info if this method run more than once
-        dsi = self.debug_summary_info       # Short cut to class var
-        s_row_num = str(row_num)
+        dsi = self.debug_summary_info		# Short cut to class var
+        s_row_num = str(row_num + 1)		# ExcelRow = PythonRow + 1
         for i, v in enumerate(rec):
             if v:
                 if v.find(self.DELIM_REPEATED_FIELD) != -1:
@@ -300,6 +304,10 @@ class Csv2XmlTemplate:
 
                 if v.find(self.DELIM_SUBFIELD) != -1:
                     self.add_row_to_debug_summary_info('has_delim_sf', i, s_row_num)
+
+                # Find (unexpected) whitespace in column 0
+                if i==0 and re.search('\s', v):
+                    self.add_row_to_debug_summary_info('has_white_space', i, s_row_num)
 
                 # Find problem sub-fields (possibly within repeated-fields)
                 if v.find(self.DELIM_REPEATED_FIELD) != -1 or v.find(self.DELIM_SUBFIELD) != -1:
