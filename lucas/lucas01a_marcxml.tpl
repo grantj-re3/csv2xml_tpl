@@ -23,11 +23,12 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     <${elem['ldr']}>     cpm#a22     #i#4500</${elem['ldr']}>\
 
     ##########################################################################
-    ## FIXME: How to deal with YYYY-YYYY
 <%
-    # If date field not NONE and is 4 digits, then substitute into 008 pos 7-10.
-    if field[3] and re.search('^\d{4}$', field[3], re.ASCII):
-        date1 = field[3]				# 4 chars: YYYY
+    # If date field not NONE and is YYYY or YYYY-YYYY, then substitute
+    # first 4 chars into 008 pos 7-10.
+    if field[3] and re.search(r'^\d{4}(-\d{4})?$', field[3], re.ASCII):
+        date1 = field[3][0:4]		# First 4 chars of YYYY or YYYY-YYYY
+
     else:
         date1 = '    '
     now = datetime.datetime.now()
@@ -44,8 +45,11 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     ##########################################################################
     ## 024 So we can update this record during future imports
     ## Eg. csv2xml_tpl.py:lucas01a:WS/Ref/001
+<%
+    field0_wo_spaces = re.sub(r'\s+', "", field[0])
+%>\
     <${elem['df']} tag="024" ind1="8" ind2=" ">
-      <${elem['sf']} code="a">csv2xml_tpl.py:lucas01a:${field[0]}</${elem['sf']}>
+      <${elem['sf']} code="a">csv2xml_tpl.py:lucas01a:${field0_wo_spaces}</${elem['sf']}>
     </${elem['df']}>\
 
     ##########################################################################
@@ -67,8 +71,6 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     ##########################################################################
     ## 100: Optionally empty field; only the first author should appear in
     ## non-repeating 100 field. 2nd and subsequent authors should be in MARC 700.
-    ## FIXME: Review
-    ## 100 FIXME: $e? Indicators?
     ## FIXME: Add report to show EMPTY SUBFIELDS!
     % if field[2]:
     <${elem['df']} tag="100" ind1="1" ind2=" ">
@@ -79,7 +81,6 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
 
     ##########################################################################
     ## 245
-    ## FIXME: $k, not $b?
 <%
     # The presence of 100/1XX should change 245 ind1 from "0" to "1".
     if field[2]:	# MARC 100
@@ -104,9 +105,6 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
 
     ##########################################################################
     ## 300: Optionally empty field; repeated fields
-    ## FIXME: Review
-    ## 300 FIXME: Spreadsheet column says "Manuscript"; where does that info fit in 300?
-    ## 300$a in markup example says: "leaf/leaves pages"
     % if field[5]:
       % for fld_val in field[5].split(delim_rf):
 <%
@@ -115,8 +113,6 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
         % if val_trim != "":
     <${elem['df']} tag="300" ind1=" " ind2=" ">
       <${elem['sf']} code="a">${val_trim}</${elem['sf']}>
-      <${elem['sf']} code="c">30 cm.</${elem['sf']}>
-      <${elem['sf']} code="e">In manila folder.</${elem['sf']}>
     </${elem['df']}>
         % endif
       % endfor
@@ -189,15 +185,12 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
 
     ##########################################################################
     ## 610: Optionally empty field; [repeated fields - not in spreadsheet yet]; specified subfields
-    ## FIXME: Review
-    ## 610 FIXME: $a? Indicators?
     % if field[8]:
       % for fld_val in field[8].split(delim_rf):
     <${elem['df']} tag="610" ind1="1" ind2="0">
         % for i,sub_val in enumerate(fld_val.split(delim_sf)):
 <%
             if i == 0:
-                # FIXME: Is this assumption correct?
                 # Subfield-code not specified for first subfield; assume "a"
                 code, val = "a", sub_val
             else:
@@ -212,15 +205,12 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
 
     ##########################################################################
     ## 650: Optionally empty field; repeated fields; specified subfields
-    ## FIXME: Review
-    ## 650 FIXME: Spreadsheet says "Three Regions Affair; Peristiwa Tiga Daerah". Template says "Files (Records)".
     % if field[6]:
       % for fld_val in field[6].split(delim_rf):
     <${elem['df']} tag="650" ind1=" " ind2="0">
         % for i,sub_val in enumerate(fld_val.split(delim_sf)):
 <%
             if i == 0:
-                # FIXME: Is this assumption correct?
                 # Subfield-code not specified for first subfield; assume "a"
                 code, val = "a", sub_val
             else:
@@ -241,7 +231,6 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
         % for i,sub_val in enumerate(fld_val.split(delim_sf)):
 <%
             if i == 0:
-                # FIXME: Is this assumption correct?
                 # Subfield-code not specified for first subfield; assume "a"
                 code, val = "a", sub_val
             else:
@@ -256,14 +245,12 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
 
     ##########################################################################
     ## 653: Optionally empty field; repeated fields; specified subfields
-    ## FIXME: Review
     % if field[12]:
       % for fld_val in field[12].split(delim_rf):
     <${elem['df']} tag="653" ind1=" " ind2=" ">
         % for i,sub_val in enumerate(fld_val.split(delim_sf)):
 <%
             if i == 0:
-                # FIXME: Is this assumption correct?
                 # Subfield-code not specified for first subfield; assume "a"
                 code, val = "a", sub_val
             else:
@@ -279,8 +266,6 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     ##########################################################################
     ## 700: Optionally empty field; 2nd and subsequent authors should be
     ## in MARC 700. First author should be in non-repeating 100 field.
-    ## FIXME: Review
-    ## 700 FIXME: $e? Indicators?
     % if field[13]:
       % for fld_i,fld_val in enumerate(field[13].split(delim_rf)):
 <%
@@ -297,7 +282,7 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     ## 984
     <${elem['df']} tag="984" ind1=" " ind2=" ">
       <${elem['sf']} code="a">SFU</${elem['sf']}>
-      <${elem['sf']} code="c">${field[0]}</${elem['sf']}>
+      <${elem['sf']} code="c">${field0_wo_spaces}</${elem['sf']}>
       <${elem['sf']} code="d">Special Collections Anton Lucas Collection</${elem['sf']}>
     </${elem['df']}>\
 
