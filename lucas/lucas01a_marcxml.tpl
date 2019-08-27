@@ -37,7 +37,7 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     now_yymmdd = now.strftime("%y%m%d")			# 6 chars: YYMMDD
     marc005 = now.strftime("%Y%m%d%H%M%S.0")		# 16 chars: yyyymmdd + hhmmss.f
     # Pos:    "0-567-0123456789 123456789 123456789"
-    marc008 = "%6ss%4s####io######r###########eng#d" % (now_yymmdd, date1)
+    marc008 = "%6ss%4s####io #####r###########eng#d" % (now_yymmdd, date1)
 %>\
     <${elem['cf']} tag="005">${marc005}</${elem['cf']}>
     <${elem['cf']} tag="008">${marc008}</${elem['cf']}>\
@@ -148,10 +148,7 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     ## Constant
     <${elem['df']} tag="506" ind1="1" ind2=" ">
       <${elem['sf']} code="a">General Special Collections conditions of access apply.</${elem['sf']}>
-    </${elem['df']}>
-    <${elem['df']} tag="506" ind1="1" ind2=" ">
-      <${elem['sf']} code="a">Access conditions</${elem['sf']}>
-      <${elem['sf']} code="u">http://www.flinders.edu.au/library/info/collections/special/conditions.cfm</${elem['sf']}>
+      <${elem['sf']} code="u">https://libraryflin.flinders.edu.au/about/collections/special</${elem['sf']}>
     </${elem['df']}>\
 
     ##########################################################################
@@ -277,6 +274,13 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     </${elem['df']}>
       % endfor
     % endif \
+
+    ##########################################################################
+    ## 856
+    <${elem['df']} tag="856" ind1="4" ind2="2">
+      <${elem['sf']} code="u">https://libraryflin.flinders.edu.au/about/collections/special/anton-lucas-collection</${elem['sf']}>
+      <${elem['sf']} code="z">About the Anton Lucas Collection </${elem['sf']}>
+    </${elem['df']}>\
 
     ##########################################################################
     ## 984
