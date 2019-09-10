@@ -24,10 +24,11 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
 
     ##########################################################################
 <%
-    # If date field not NONE and is YYYY or YYYY-YYYY, then substitute
-    # first 4 chars into 008 pos 7-10.
-    if field[3] and re.search(r'^\d{4}(-\d{4})?$', field[3], re.ASCII):
-        date1 = field[3][0:4]		# First 4 chars of YYYY or YYYY-YYYY
+    # If date field not None and is YYYY or YYYY- or YYYY-YYYY, then
+    # substitute first 4 chars into 008 pos 7-10.
+    date0 = re.sub(r'[\[\]\?]', "", field[3]) if field[3] else ""  # Excl probable date chars "[]?"
+    if re.search(r'^\d{4}(-(\d{4})?)?$', date0, re.ASCII):
+        date1 = date0[0:4]	# First 4 chars of YYYY or YYYY- or YYYY-YYYY
 
     else:
         date1 = '    '
@@ -69,9 +70,8 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     </${elem['df']}>\
 
     ##########################################################################
-    ## 100: Optionally empty field; only the first author should appear in
-    ## non-repeating 100 field. 2nd and subsequent authors should be in MARC 700.
-    ## FIXME: Add report to show EMPTY SUBFIELDS!
+    ## 100: Optionally empty field. Only the first author should appear in
+    ## non-repeating 100 field. Second and subsequent authors should be in MARC 700.
     % if field[2]:
     <${elem['df']} tag="100" ind1="1" ind2=" ">
       <${elem['sf']} code="a">${field[2]}</${elem['sf']}>
@@ -80,7 +80,7 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     % endif \
 
     ##########################################################################
-    ## 245
+    ## 245 Always populated
 <%
     # The presence of 100/1XX should change 245 ind1 from "0" to "1".
     if field[2]:	# MARC 100
@@ -94,7 +94,7 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     </${elem['df']}>\
 
     ##########################################################################
-    ## 264: $c may be empty or YYYY
+    ## 264: $c Optionally empty subfield; expect empty or YYYY or YYYY-YYYY
     <${elem['df']} tag="264" ind1=" " ind2="0">
       <${elem['sf']} code="a">Adelaide, S.A.</${elem['sf']}>
       <${elem['sf']} code="b">Anton Lucas Collection</${elem['sf']}>
@@ -137,7 +137,7 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     </${elem['df']}>\
 
     ##########################################################################
-    ## 500
+    ## 500 Optionally empty field
     % if field[11]:
     <${elem['df']} tag="500" ind1=" " ind2=" ">
       <${elem['sf']} code="a">Coverage: ${field[11]}</${elem['sf']}>
@@ -152,13 +152,13 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     </${elem['df']}>\
 
     ##########################################################################
-    ## 520
+    ## 520 Always populated
     <${elem['df']} tag="520" ind1=" " ind2=" ">
       <${elem['sf']} code="a">${field[4]}</${elem['sf']}>
     </${elem['df']}>\
 
     ##########################################################################
-    ## 546
+    ## 546 Optionally empty field
     % if field[10]:
     <${elem['df']} tag="546" ind1=" " ind2=" ">
       <${elem['sf']} code="a">In ${field[10]}.</${elem['sf']}>
@@ -172,16 +172,27 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     </${elem['df']}>\
 
     ##########################################################################
-    ## 600
+    ## 600: Optionally empty field; repeated fields; specified subfields
     % if field[9]:
+      % for fld_val in field[9].split(delim_rf):
     <${elem['df']} tag="600" ind1="1" ind2="0">
-      <${elem['sf']} code="a">${field[9]}</${elem['sf']}>
-      <${elem['sf']} code="v">Sources.</${elem['sf']}>
+        % for i,sub_val in enumerate(fld_val.split(delim_sf)):
+<%
+            if i == 0:
+                # Subfield-code not specified for first subfield; assume "a"
+                code, val = "a", sub_val
+            else:
+                # Subfield-code specified by first char 
+                code, val = sub_val[0:1], sub_val[1:]
+%>\
+      <${elem['sf']} code="${code}">${val}</${elem['sf']}>
+        % endfor
     </${elem['df']}>
+      % endfor
     % endif \
 
     ##########################################################################
-    ## 610: Optionally empty field; [repeated fields - not in spreadsheet yet]; specified subfields
+    ## 610: Optionally empty field; repeated fields; specified subfields
     % if field[8]:
       % for fld_val in field[8].split(delim_rf):
     <${elem['df']} tag="610" ind1="1" ind2="0">
@@ -261,8 +272,9 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     % endif \
 
     ##########################################################################
-    ## 700: Optionally empty field; 2nd and subsequent authors should be
-    ## in MARC 700. First author should be in non-repeating 100 field.
+    ## 700: Optionally empty field; repeated fields.
+    ## Second and subsequent authors should be in MARC 700. First author
+    ## should be in non-repeating 100 field.
     % if field[13]:
       % for fld_i,fld_val in enumerate(field[13].split(delim_rf)):
 <%
@@ -279,7 +291,7 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     ## 856
     <${elem['df']} tag="856" ind1="4" ind2="2">
       <${elem['sf']} code="u">https://libraryflin.flinders.edu.au/about/collections/special/anton-lucas-collection</${elem['sf']}>
-      <${elem['sf']} code="z">About the Anton Lucas Collection </${elem['sf']}>
+      <${elem['sf']} code="z">About the Anton Lucas Collection</${elem['sf']}>
     </${elem['df']}>\
 
     ##########################################################################
