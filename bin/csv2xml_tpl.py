@@ -34,6 +34,13 @@
 #   can set it with ENCODING_XML_OUT below.
 #
 # Gotchas:
+# - WARNING: I have attempted to do Save As "CSV" in an Excel spreadsheet
+#   with cp1252 character encoding, however Save As "CSV" corrupts *some*
+#   special/foreign characters so they are no longer cp1252! Hence I now
+#   use Save As "CSV UTF-8" which appears to properly convert and
+#   save the CSV with UTF-8 character encoding and preserve special/foreign
+#   characters. Then I can process the CSV with ENCODING_CSV_IN (below)
+#   set to "utf-8-sig".
 # - You might be able to obtain a UTF-8 CSV file by:
 #   * saving as "CSV UTF-8" from Excel or similar spreadsheet software
 #   * saving as CSV, then using another program (such as "iconv") to
@@ -101,7 +108,7 @@ class Csv2XmlTemplate:
     # - "cp1252" for Windows-1252 (eg. for Microsoft Excel CSV in Australia)
     # - "utf-8" without BOM-awareness (common for web/XML use)
     # - "utf-8-sig" with BOM-awareness (common for web/XML use)
-    ENCODING_CSV_IN = "cp1252"
+    ENCODING_CSV_IN = "utf-8-sig"
     ENCODING_XML_OUT = "utf-8"
 
     # If your input CSV contains normal (non-XML) text and your output
@@ -149,6 +156,7 @@ class Csv2XmlTemplate:
     ##########################################################################
     # Class vars
     debug_summary_info = {
+                'header':       {},
                 'empty':        {},
                 'has_white_space': {},
 
@@ -264,6 +272,7 @@ class Csv2XmlTemplate:
         # Show the report info
         reports_config = [
             # Key		Report title						Printf-format of report line
+            ["header",		"Header field names",					"  Field %2d%-" + s_col_name_len + "s (in row %s)"],
             ["empty",		"Empty fields",						"  Field %2d%-" + s_col_name_len + "s is empty in rows: %s"],
             ["has_white_space",	"Unexpected white space",				"  Field %2d%-" + s_col_name_len + "s contains unexpected space in rows: %s"],
 
@@ -274,6 +283,9 @@ class Csv2XmlTemplate:
             ["has_empty_sf",	"Empty subfield (SF)",					"  Field %2d%-" + s_col_name_len + "s contains an empty SF in rows: %s"],
             ["has_bad_sf_code",	"Invalid subfield code (SFC). Should be [a-z0-9]",	"  Field %2d%-" + s_col_name_len + "s contains an invalid SFC: %s"],
 	]
+
+        for i, v in enumerate(hdr_fields):
+            self.add_row_to_debug_summary_info('header', i, "1")
 
         for params in reports_config:
             dsi_key, rpt_title, rpt_fmt = params
