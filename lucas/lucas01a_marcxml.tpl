@@ -29,16 +29,18 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
     date0 = re.sub(r'[\[\]\?]', "", field[3]) if field[3] else ""  # Excl probable date chars "[]?"
     if re.search(r'^\d{4}(-(\d{4})?)?$', date0, re.ASCII):
         date1 = date0[0:4]	# First 4 chars of YYYY or YYYY- or YYYY-YYYY
+        date_type = "s"
 
     else:
-        date1 = '    '
+        date1 = 'uuuu'
+        date_type = "n"
     now = datetime.datetime.now()
     # FIXME: COMMENT OUT DEBUG LINE BELOW
     #now = datetime.datetime(2019, 6, 12, 17, 41, 31)	# For debug
     now_yymmdd = now.strftime("%y%m%d")			# 6 chars: YYMMDD
     marc005 = now.strftime("%Y%m%d%H%M%S.0")		# 16 chars: yyyymmdd + hhmmss.f
-    # Pos:    "0-567-0123456789 123456789 123456789"
-    marc008 = "%6ss%4s####io #####r###########eng#d" % (now_yymmdd, date1)
+    # Pos:    "0-56667-0123456789 123456789 123456789"
+    marc008 = "%6s%1s%4s####io #####r###########eng#d" % (now_yymmdd, date_type, date1)
 %>\
     <${elem['cf']} tag="005">${marc005}</${elem['cf']}>
     <${elem['cf']} tag="008">${marc008}</${elem['cf']}>\
