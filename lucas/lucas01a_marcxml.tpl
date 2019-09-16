@@ -19,8 +19,9 @@ DEBUG TEMPLATE (rec_num ${rec_num}):
   <${elem['rec']}>
     ##########################################################################
     ## Constant
+    ## LDR/06="t" => "Unpublished" (in the Trove zone "Diaries, letters, archives")
     ## Pos:         0123456789 123456789 123
-    <${elem['ldr']}>     cpm#a22     #i#4500</${elem['ldr']}>\
+    <${elem['ldr']}>     ctm#a22     #i#4500</${elem['ldr']}>\
 
     ##########################################################################
 <%
