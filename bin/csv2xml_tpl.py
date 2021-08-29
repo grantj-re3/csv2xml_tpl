@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2019, Flinders University, South Australia. All rights reserved.
+# Copyright (c) 2019-2021, Flinders University, South Australia. All rights reserved.
 # Contributors: Library, Corporate Services, Flinders University.
 # See the accompanying LICENSE file (or http://opensource.org/licenses/BSD-3-Clause).
 #
@@ -119,6 +119,7 @@ class Csv2XmlTemplate:
     # CSV configs
     DELIM_REPEATED_FIELD = "||"		# CSV delimiter for a repeated field, eg. 651
     DELIM_SUBFIELD = "^^"		# CSV delimiter for a subfield, eg. 651$x
+    VALID_SUBFIELD_CODE = '^[a-z0-9]'	# String used for valid subfield code regex
 
     # Mandatory (*) CSV columns. First CSV column is Python index 0.
     #  0: *Ref
@@ -128,12 +129,17 @@ class Csv2XmlTemplate:
     #  4: *Description (free text) (520)
     #  5: *Format (300)
     #  6:  Subjects (650)
-    #  7: *Geographic subjects (651)
-    #  8:  Corporate Name (610)
-    #  9:  Name (600)
+    #  7:  NA1 - Geographic subjects (651)
+    #  8:  NA2 - Corporate Name (610)
+    #  9:  NA3 - Name (600)
     # 10:  Language (546)
-    # 11:  COVERAGE
-    MANDATORY_COLUMNS = (0, 1, 2, 4, 5, 7)	# FIXME: Give warning if mandatory column is empty!
+    # 11:  Coverage (500)
+    # 12:  Theme (653)
+    # 13:  NA4
+    # 14:  Copyright (542)
+    # 15:  Publisher location (264a)
+    # 16:  Publisher Name (264b)
+    MANDATORY_COLUMNS = (0, 1, 2, 4, 5)	# FIXME: Give warning if mandatory column is empty!
 
     ##########################################################################
     # XML element list without XML namespace
@@ -271,17 +277,17 @@ class Csv2XmlTemplate:
 
         # Show the report info
         reports_config = [
-            # Key		Report title						Printf-format of report line
-            ["header",		"Header field names",					"  Field %2d%-" + s_col_name_len + "s (in row %s)"],
-            ["empty",		"Empty fields",						"  Field %2d%-" + s_col_name_len + "s is empty in rows: %s"],
-            ["has_white_space",	"Unexpected white space",				"  Field %2d%-" + s_col_name_len + "s contains unexpected space in rows: %s"],
+            # Key		Report title								Printf-format of report line
+            ["header",		"Header field names",							"  Field %2d%-" + s_col_name_len + "s (in row %s)"],
+            ["empty",		"Empty fields",								"  Field %2d%-" + s_col_name_len + "s is empty in rows: %s"],
+            ["has_white_space",	"Unexpected white space",						"  Field %2d%-" + s_col_name_len + "s contains unexpected space in rows: %s"],
 
-            ["has_delim_rf",	"Repeated-field (RF) delimiter",			"  Field %2d%-" + s_col_name_len + "s contains RF delimiter in rows: %s"],
-            ["has_delim_sf",	"Subfield (SF) delimiter",				"  Field %2d%-" + s_col_name_len + "s contains SF delimiter in rows: %s"],
+            ["has_delim_rf",	"Repeated-field (RF) delimiter",					"  Field %2d%-" + s_col_name_len + "s contains RF delimiter in rows: %s"],
+            ["has_delim_sf",	"Subfield (SF) delimiter",						"  Field %2d%-" + s_col_name_len + "s contains SF delimiter in rows: %s"],
 
-            ["has_empty_rf",	"Empty repeated-field (RF)",				"  Field %2d%-" + s_col_name_len + "s contains an empty RF in rows: %s"],
-            ["has_empty_sf",	"Empty subfield (SF)",					"  Field %2d%-" + s_col_name_len + "s contains an empty SF in rows: %s"],
-            ["has_bad_sf_code",	"Invalid subfield code (SFC). Should be [a-z0-9]",	"  Field %2d%-" + s_col_name_len + "s contains an invalid SFC: %s"],
+            ["has_empty_rf",	"Empty repeated-field (RF)",						"  Field %2d%-" + s_col_name_len + "s contains an empty RF in rows: %s"],
+            ["has_empty_sf",	"Empty subfield (SF)",							"  Field %2d%-" + s_col_name_len + "s contains an empty SF in rows: %s"],
+            ["has_bad_sf_code",	"Invalid subfield code (SFC). Should be " + self.VALID_SUBFIELD_CODE,	"  Field %2d%-" + s_col_name_len + "s contains an invalid SFC in rows: %s"],
 	]
 
         for i, v in enumerate(hdr_fields):
@@ -304,6 +310,7 @@ class Csv2XmlTemplate:
         # Must re-initialise self.debug_summary_info if this method run more than once
         dsi = self.debug_summary_info		# Short cut to class var
         s_row_num = str(row_num + 1)		# ExcelRow = PythonRow + 1
+        regex_blank = re.compile('^\s*$')
         for i, v in enumerate(rec):
             if v:
                 if v.find(self.DELIM_REPEATED_FIELD) != -1:
@@ -311,33 +318,34 @@ class Csv2XmlTemplate:
 
                     # Find empty repeated-fields
                     rfields = v.split(self.DELIM_REPEATED_FIELD)
-                    if None in rfields or "" in rfields:
+                    if None in rfields or any(regex_blank.match(str) for str in rfields):
                         self.add_row_to_debug_summary_info('has_empty_rf', i, s_row_num)
 
                 if v.find(self.DELIM_SUBFIELD) != -1:
                     self.add_row_to_debug_summary_info('has_delim_sf', i, s_row_num)
 
-                # Find (unexpected) whitespace in column 0
+                # Find (unexpected) whitespace in column 0 (the Ref field)
                 if i==0 and re.search('\s', v):
                     self.add_row_to_debug_summary_info('has_white_space', i, s_row_num)
 
                 # Find problem sub-fields (possibly within repeated-fields)
-                if v.find(self.DELIM_REPEATED_FIELD) != -1 or v.find(self.DELIM_SUBFIELD) != -1:
+                if v.find(self.DELIM_SUBFIELD) != -1:
                     for rf_i, rf_val in enumerate(v.split(self.DELIM_REPEATED_FIELD)):
                         for sf_i, sf_val in enumerate(rf_val.split(self.DELIM_SUBFIELD)):
                             # First subfield does not have a MARC subfield code ("a" is assumed)
                             if sf_i == 0:
-                                if not sf_val or len(sf_val) == 0:
+                                if regex_blank.match(sf_val):
                                     self.add_row_to_debug_summary_info('has_empty_sf', i, s_row_num)
 
                             # After the first subfield, the first char must be a MARC subfield code (eg. "z")
                             else:
-                                if not sf_val or len(sf_val) < 2:
+                                sf_val_stripped = sf_val.strip()
+                                if len(sf_val_stripped) < 2:
                                     self.add_row_to_debug_summary_info('has_empty_sf', i, s_row_num)
 
                                 # Subfield has 2 chars or more. Is first char valid?
                                 else:
-                                    if not re.search('^[a-z0-9]', sf_val):
+                                    if not re.search(self.VALID_SUBFIELD_CODE, sf_val_stripped):
                                         self.add_row_to_debug_summary_info('has_bad_sf_code', i, s_row_num)
 
             else:
